@@ -8,7 +8,7 @@ class BaseBackend(ABC):
 
 
     @abstractmethod
-    async def put(self,key: str, value: Any, expire: int): ...
+    async def put(self,key: str, expire: int): ...
 
 
     @abstractmethod
