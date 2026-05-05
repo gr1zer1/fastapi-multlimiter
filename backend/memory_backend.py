@@ -3,11 +3,11 @@ from datetime import datetime,timezone,timedelta
 
 
 class MemoryBackend(BaseBackend):
+    expire: int | None = None
 
-
-    def __init__(self, expire: int):
+    def __init__(self):
         self.counter: dict[str,dict] = dict()
-        self.expire = expire
+        self.expire: int | None = None
 
 
     async def put(self, key: str) -> dict:
