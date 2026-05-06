@@ -20,8 +20,11 @@ async def test_limit():
         transport=ASGITransport(app=app),
         base_url="http://test",
     ) as ac:
-        for i in range(6):
+        for i in range(5):
             response = await ac.get("/")
+            assert response.status_code == 200
         
-    assert response.status_code == 429
+        response = await ac.get("/")
+
+        assert response.status_code == 429
    
