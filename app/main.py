@@ -16,7 +16,7 @@ algorithm = FixedWindowAlgorithm(
 
 @app.get("/")
 async def root():
-    return "Hello World"
+    return {"message": "Hello World"}
 
 
 @app.middleware("http")
