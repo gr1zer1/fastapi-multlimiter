@@ -21,7 +21,7 @@ class FixedWindowAlgorithm(BaseAlgorithm):
             
             return True
         
-        elif self.limit < payload["counter"]:
+        elif self.limit <= payload["counter"]:
             await self.backend.increment(key)
             
             return False

@@ -15,3 +15,11 @@ class BaseBackend(ABC):
 
     @abstractmethod
     async def increment(self,key: str) -> int | dict: ...
+
+
+    @abstractmethod
+    async def append(self,key: str,timestamp: float): ...
+
+
+    @abstractmethod
+    async def get_range(self,key: str, from_time: float) -> list[float]: ...
