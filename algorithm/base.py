@@ -22,4 +22,13 @@ class BaseAlgorithm(ABC):
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail={"detail": "Too Many Requests"}
             )
-        
+    
+    def limiter_wrapper(self, func):
+        async def wrapper(request: Request):
+            if not await self.check(request.client.host):
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Too Many Requests"
+                )
+            return await func(request)
+        return wrapper

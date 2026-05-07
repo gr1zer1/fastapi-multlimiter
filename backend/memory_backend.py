@@ -57,4 +57,8 @@ class MemoryBackend(BaseBackend):
         if res is None:
             return [] 
 
-        return  list(filter(lambda t: t>from_time,res))           
+        return  list(filter(lambda t: t>from_time,res))
+
+
+    async def _clear(self):
+        self.counter = dict()

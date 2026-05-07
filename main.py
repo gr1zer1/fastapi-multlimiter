@@ -7,13 +7,13 @@ from backend import MemoryBackend
 
 app = FastAPI()
 
-algorithm = FixedWindowAlgorithm(
+algorithm_fw = FixedWindowAlgorithm(
     MemoryBackend(),
     5,
     60
 )
 
-algorithm2 = SlidingWindowAlgorithm(
+algorithm_sw = SlidingWindowAlgorithm(
     MemoryBackend(),
     5,
     60
@@ -24,14 +24,26 @@ algorithm2 = SlidingWindowAlgorithm(
 async def root():
     return {"message": "Hello World"}
 
-@app.get("/fw",dependencies=[Depends(algorithm.limiter)])
+@app.get("/fw",dependencies=[Depends(algorithm_fw.limiter)])
 async def fw():
     return {"message": "Hello World"}
 
 
-@app.get("/sw",dependencies=[Depends(algorithm2.limiter)])
+@app.get("/sw",dependencies=[Depends(algorithm_sw.limiter)])
 async def sw():
     return {"message": "Hello World"}
+
+@app.get("/wrapper/sw")
+@algorithm_sw.limiter_wrapper
+async def wrapper_sw(request: Request):
+    return {"message": "Hello World"}
+
+
+@app.get("/wrapper/fw")
+@algorithm_fw.limiter_wrapper
+async def wrapper_fw(request: Request):
+    return {"message": "Hello World"}
+
 
 # @app.middleware("http")
 # async def limiter(request: Request,call_next):

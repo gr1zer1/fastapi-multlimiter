@@ -23,3 +23,7 @@ class BaseBackend(ABC):
 
     @abstractmethod
     async def get_range(self,key: str, from_time: float) -> list[float]: ...
+
+
+    @abstractmethod
+    async def _clear(self): ...
