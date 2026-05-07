@@ -13,11 +13,11 @@ class SlidingWindowAlgorithm(BaseAlgorithm):
 
 
     async def check(self, key: str) -> bool: 
-        res = await self.backend.get_range(key=key,from_time=float(datetime.now(timezone.utc)))
+        res = await self.backend.get_range(key=key,from_time=datetime.now(timezone.utc).timestamp()-self.window)
         if len(res) >= self.limit:
-            self.backend.append(key,float(datetime.now(timezone.utc)))
+            await self.backend.append(key,datetime.now(timezone.utc).timestamp())
             return False
         
-        self.backend.append(key,float(datetime.now(timezone.utc)))
+        await self.backend.append(key,datetime.now(timezone.utc).timestamp())
         
         return True

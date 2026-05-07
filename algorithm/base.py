@@ -23,4 +23,3 @@ class BaseAlgorithm(ABC):
                 detail={"detail": "Too Many Requests"}
             )
         
-        print("Hello")

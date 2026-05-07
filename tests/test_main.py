@@ -15,16 +15,29 @@ async def test_root():
     assert response.json() == {"message": "Hello World"}
 
 
-async def test_limit():
+async def test_limit_sw():
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
     ) as ac:
-        for i in range(4):
-            response = await ac.get("/")
+        for i in range(5):
+            response = await ac.get("/sw")
             assert response.status_code == 200
         
-        response = await ac.get("/")
+        response = await ac.get("/sw")
 
         assert response.status_code == 429
-   
+
+
+async def test_limit_fw():
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        for i in range(5):
+            response = await ac.get("/fw")
+            assert response.status_code == 200
+        
+        response = await ac.get("/fw")
+
+        assert response.status_code == 429

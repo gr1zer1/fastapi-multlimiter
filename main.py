@@ -1,7 +1,7 @@
 from fastapi import FastAPI,Request,Depends
 from fastapi.responses import JSONResponse
 
-from algorithm import FixedWindowAlgorithm
+from algorithm import FixedWindowAlgorithm,SlidingWindowAlgorithm
 from backend import MemoryBackend
 
 
@@ -13,11 +13,25 @@ algorithm = FixedWindowAlgorithm(
     60
 )
 
+algorithm2 = SlidingWindowAlgorithm(
+    MemoryBackend(),
+    5,
+    60
+)
 
-@app.get("/",dependencies=[Depends(algorithm.limiter)])
+
+@app.get("/")
 async def root():
     return {"message": "Hello World"}
 
+@app.get("/fw",dependencies=[Depends(algorithm.limiter)])
+async def fw():
+    return {"message": "Hello World"}
+
+
+@app.get("/sw",dependencies=[Depends(algorithm2.limiter)])
+async def sw():
+    return {"message": "Hello World"}
 
 # @app.middleware("http")
 # async def limiter(request: Request,call_next):
