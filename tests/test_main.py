@@ -1,5 +1,5 @@
 from httpx import ASGITransport, AsyncClient
-from app.main import app
+from main import app
 
 
 async def test():
