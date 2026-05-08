@@ -10,7 +10,7 @@ class RedisBackend(BaseBackend):
 
     def __init__(self,url: str):
         self.expire: int | None = None
-        self.client: redis.Redis = redis.from_url(url)
+        self.client: redis.Redis = redis.from_url(url, decode_responses=True)
 
  
     async def get(self, key: str) -> dict | None:
@@ -65,11 +65,28 @@ class RedisBackend(BaseBackend):
             "ttl": ttl,
         }
 
-    async def append(self, key, timestamp):
-        pass
 
-    async def get_range(self, key, from_time):
-        pass
+    async def append(self, key: str, timestamp: float):
+        await self.client.zadd(
+            f"sw:{key}",
+            {str(timestamp): timestamp}
+        )
+
+    async def get_range(self, key: str, from_time: float) -> list[float]:
+        await self.client.zremrangebyscore(
+            f"sw:{key}",
+            "-inf",
+            from_time-1
+        )
+        return await self.client.zrangebyscore(
+            f"sw:{key}",
+            from_time,
+            "+inf"
+        )
 
     async def _clear(self):
-        pass
+        await self.client.flushall()
+
+    async def close(self):
+        await self.client.close()
+        await self.client.connection_pool.disconnect()
