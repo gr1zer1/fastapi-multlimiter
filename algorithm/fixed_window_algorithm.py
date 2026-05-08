@@ -15,5 +15,7 @@ class FixedWindowAlgorithm(BaseAlgorithm):
 
     
     async def check(self, key: str) -> bool:
-        payload = await self.backend.put(key)  
+        payload = await self.backend.put(key)
+        print(payload["counter"])
+
         return payload["counter"] <= self.limit
