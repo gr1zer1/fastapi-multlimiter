@@ -1,6 +1,7 @@
 from httpx import ASGITransport, AsyncClient
 from main import app,algorithm_sw,algorithm_fw
 import pytest_asyncio
+import asyncio
 
 
 @pytest_asyncio.fixture
@@ -18,6 +19,16 @@ async def reset_backend():
     await algorithm_sw.backend._clear()
 
 
+async def limit_loop(url:str,client:AsyncClient):
+    for i in range(5):
+        response = await client.get(url)
+        assert response.status_code == 200
+        
+    response = await client.get(url)
+
+    assert response.status_code == 429
+
+
 async def test():
     assert 2 == 2
 
@@ -31,41 +42,32 @@ async def test_root(client):
 
 async def test_limit_sw(client):
     
-    for i in range(5):
-        response = await client.get("/sw")
-        assert response.status_code == 200
-        
-    response = await client.get("/sw")
-
-    assert response.status_code == 429
+    await limit_loop("/sw",client)
 
 
 async def test_limit_fw(client):
-    for i in range(5):
-        response = await client.get("/fw")
-        assert response.status_code == 200
-        
-    response = await client.get("/fw")
-
-    assert response.status_code == 429
+    await limit_loop("/fw",client)
 
 
 async def test_limit_wrapper_fw(client):
-    for i in range(5):
-        response = await client.get("/wrapper/fw")
-        print(response.json())
-        assert response.status_code == 200
-        
-    response = await client.get("/wrapper/fw")
-
-    assert response.status_code == 429
+    await limit_loop("/wrapper/fw",client)
 
 
 async def test_limit_wrapper_sw(client):
-    for i in range(5):
-        response = await client.get("/wrapper/sw")
-        assert response.status_code == 200
-        
-    response = await client.get("/wrapper/sw")
+    await limit_loop("/wrapper/sw",client)
 
-    assert response.status_code == 429
+
+async def test_timestamp_fw(client):
+    await limit_loop("/fw",client)
+
+    await asyncio.sleep(60)
+    print(algorithm_fw.backend.counter)
+    await limit_loop("/fw",client)
+
+
+async def test_timestamp_sw(client):
+    await limit_loop("/sw",client)
+
+    await asyncio.sleep(60)
+    print(algorithm_fw.backend.counter)
+    await limit_loop("/sw",client)
