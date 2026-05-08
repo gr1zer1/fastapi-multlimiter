@@ -27,3 +27,6 @@ class BaseBackend(ABC):
 
     @abstractmethod
     async def _clear(self): ...
+
+    @abstractmethod
+    async def close(self): ...
