@@ -62,3 +62,6 @@ class MemoryBackend(BaseBackend):
 
     async def _clear(self):
         self.counter = dict()
+    
+    async def close(self):
+        pass

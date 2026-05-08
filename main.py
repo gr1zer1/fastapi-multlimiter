@@ -1,11 +1,12 @@
 from fastapi import FastAPI,Request,Depends
 from fastapi.responses import JSONResponse
 
+from contextlib import asynccontextmanager
+
 from algorithm import FixedWindowAlgorithm,SlidingWindowAlgorithm
-from backend import MemoryBackend
+from backend import MemoryBackend,RedisBackend
 
-
-app = FastAPI()
+redis_backend = RedisBackend("redis://localhost:6379")
 
 algorithm_fw = FixedWindowAlgorithm(
     MemoryBackend(),
@@ -18,6 +19,30 @@ algorithm_sw = SlidingWindowAlgorithm(
     5,
     60
 )
+
+redis_fw = FixedWindowAlgorithm(
+
+    redis_backend,
+    5,
+    60
+)
+
+redis_sw = SlidingWindowAlgorithm(
+    redis_backend,
+    5,
+    60
+)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    await redis_fw.backend.close()
+    await redis_sw.backend.close()
+
+
+app = FastAPI(lifespan=lifespan)
+
 
 
 @app.get("/")
@@ -44,15 +69,10 @@ async def wrapper_sw(request: Request):
 async def wrapper_fw(request: Request):
     return {"message": "Hello World"}
 
+@app.get("/redis/fw",dependencies=[Depends(redis_fw.limiter)])
+async def redis__fw():
+    return {"message": "Hello World"}
 
-# @app.middleware("http")
-# async def limiter(request: Request,call_next):
-#     user_id = request.client.host
-#     print(request.client.host)
-#     if await algorithm.check(user_id):
-#         return await call_next(request)
-    
-#     return JSONResponse(
-#         status_code=429,
-#         content={"detail": "Too Many Requests"}
-#     )
+@app.get("/redis/sw",dependencies=[Depends(redis_sw.limiter)])
+async def redis__sw():
+    return {"message": "Hello World"}

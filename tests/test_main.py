@@ -1,31 +1,99 @@
 from httpx import ASGITransport, AsyncClient
-from main import app,algorithm_sw,algorithm_fw
+from fastapi import Depends, FastAPI, Request
 import pytest_asyncio
+
+from algorithm import FixedWindowAlgorithm, SlidingWindowAlgorithm
+from backend import MemoryBackend, RedisBackend
+from freezegun import freeze_time
+from datetime import datetime,timedelta,timezone
 import asyncio
 
 
 @pytest_asyncio.fixture
-async def client():
+async def app():
+    redis_backend = RedisBackend("redis://localhost:6379")
+
+    algorithm_fw = FixedWindowAlgorithm(
+        MemoryBackend(),
+        limit=5,
+        window=60,
+    )
+    algorithm_sw = SlidingWindowAlgorithm(
+        MemoryBackend(),
+        limit=5,
+        window=60,
+    )
+    redis_fw = FixedWindowAlgorithm(
+        redis_backend,
+        limit=5,
+        window=5,
+    )
+    redis_sw = SlidingWindowAlgorithm(
+        redis_backend,
+        limit=5,
+        window=5,
+    )
+
+    test_app = FastAPI()
+    test_app.state.redis_backend = redis_backend
+
+    @test_app.get("/")
+    async def root():
+        return {"message": "Hello World"}
+
+    @test_app.get("/fw", dependencies=[Depends(algorithm_fw.limiter)])
+    async def fw():
+        return {"message": "Hello World"}
+
+    @test_app.get("/sw", dependencies=[Depends(algorithm_sw.limiter)])
+    async def sw():
+        return {"message": "Hello World"}
+
+    @test_app.get("/wrapper/sw")
+    @algorithm_sw.limiter_wrapper
+    async def wrapper_sw(request: Request):
+        return {"message": "Hello World"}
+
+    @test_app.get("/wrapper/fw")
+    @algorithm_fw.limiter_wrapper
+    async def wrapper_fw(request: Request):
+        return {"message": "Hello World"}
+
+    @test_app.get("/redis/fw", dependencies=[Depends(redis_fw.limiter)])
+    async def redis__fw():
+        return {"message": "Hello World"}
+
+    @test_app.get("/redis/sw", dependencies=[Depends(redis_sw.limiter)])
+    async def redis__sw():
+        return {"message": "Hello World"}
+
+    yield test_app
+
+    await redis_backend.close()
+
+
+@pytest_asyncio.fixture
+async def client(app):
     async with AsyncClient(
         transport=ASGITransport(app=app),
-        base_url="http://test"
+        base_url="http://test",
     ) as ac:
         yield ac
 
-@pytest_asyncio.fixture(autouse=True)
-async def reset_backend():
+
+@pytest_asyncio.fixture
+async def clean_redis(app):
+    await app.state.redis_backend._clear()
     yield
-    await algorithm_fw.backend._clear()
-    await algorithm_sw.backend._clear()
+    await app.state.redis_backend._clear()
 
 
-async def limit_loop(url:str,client:AsyncClient):
-    for i in range(5):
+async def limit_loop(url: str, client: AsyncClient, limit: int = 5):
+    for _ in range(limit):
         response = await client.get(url)
         assert response.status_code == 200
-        
-    response = await client.get(url)
 
+    response = await client.get(url)
     assert response.status_code == 429
 
 
@@ -34,40 +102,65 @@ async def test():
 
 
 async def test_root(client):
-    
     response = await client.get("/")
     assert response.status_code == 200
     assert response.json() == {"message": "Hello World"}
 
 
 async def test_limit_sw(client):
-    
-    await limit_loop("/sw",client)
+    await limit_loop("/sw", client)
 
 
 async def test_limit_fw(client):
-    await limit_loop("/fw",client)
+    await limit_loop("/fw", client)
 
 
 async def test_limit_wrapper_fw(client):
-    await limit_loop("/wrapper/fw",client)
+    await limit_loop("/wrapper/fw", client)
 
 
 async def test_limit_wrapper_sw(client):
-    await limit_loop("/wrapper/sw",client)
+    await limit_loop("/wrapper/sw", client)
 
 
-async def test_timestamp_fw(client):
+async def test_redis_fw(client, clean_redis):
+    await limit_loop("/redis/fw", client)
+
+
+async def test_redis_sw(client, clean_redis):
+    await limit_loop("/redis/sw", client)
+
+
+async def test_timestamp_fw(client,clean_redis):
     await limit_loop("/fw",client)
 
-    await asyncio.sleep(60)
-    print(algorithm_fw.backend.counter)
-    await limit_loop("/fw",client)
+    date = datetime.now(timezone.utc) + timedelta(seconds=60)
+    time = freeze_time(date)
+    with time:
+        await limit_loop("/fw",client)
 
-
-async def test_timestamp_sw(client):
+async def test_timestamp_sw(client,clean_redis):
     await limit_loop("/sw",client)
 
-    await asyncio.sleep(60)
-    print(algorithm_fw.backend.counter)
-    await limit_loop("/sw",client)
+    date = datetime.now(timezone.utc) + timedelta(seconds=60)
+
+    time = freeze_time(date)
+    with time:
+        await limit_loop("/sw",client)
+
+
+
+async def test_timestamp_redis_fw(client,clean_redis):
+    await limit_loop("/redis/fw",client)
+
+    await asyncio.sleep(5)
+    
+    await limit_loop("/redis/fw",client)
+
+
+async def test_timestamp_redis_sw(client,clean_redis):
+    await limit_loop("/redis/sw",client)
+
+    await asyncio.sleep(5)
+    
+    await limit_loop("/redis/sw",client)
