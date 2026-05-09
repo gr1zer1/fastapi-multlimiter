@@ -16,8 +16,11 @@ class FixedWindowAlgorithm(BaseAlgorithm):
         self.key_func = key_func
 
     
-    async def check(self, key: str) -> bool:
+    async def check(self, key: str) -> dict:
         payload = await self.backend.put(key)
-        print(payload["counter"])
 
-        return payload["counter"] <= self.limit
+        if payload["counter"] <= self.limit:
+            return {"remain":self.limit - payload["counter"],"check":True,"after":await self.backend.get_time_fw(key)}
+        
+        return {"remain":0,"check":False,"after":await self.backend.get_time_fw(key)}
+

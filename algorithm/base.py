@@ -15,7 +15,7 @@ class BaseAlgorithm(ABC):
     
 
     @abstractmethod
-    async def check(self, key: str) -> bool: ...
+    async def check(self, key: str) -> dict: ...
 
 
     async def get_value(self,request: Request) -> str:
@@ -29,18 +29,31 @@ class BaseAlgorithm(ABC):
 
 
     async def limiter(self, request: Request):
-        if not await self.check(await self.get_value(request)):
+        res = await self.check(await self.get_value(request))
+        if not res["check"]:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail={"detail": "Too Many Requests"}
+                detail={"detail": "Too Many Requests"},
+                headers={
+                    "X-RateLimit-Limit":str(self.limit),
+                    "X-RateLimit-Remaining":str(res["remain"]),
+                    "Retry-After":str(res["after"])
+                    },
             )
+        
     
     def limiter_wrapper(self, func):
         async def wrapper(request: Request):
-            if not await self.check(await self.get_value(request)):
+            res = await self.check(await self.get_value(request))
+            if not res["check"]:
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Too Many Requests"
+                    detail={"detail": "Too Many Requests"},
+                    headers={
+                    "X-RateLimit-Limit":str(self.limit),
+                    "X-RateLimit-Remaining":str(res["remain"]),
+                    "Retry-After":str(res["after"])
+                    },
                 )
             return await func(request)
         return wrapper

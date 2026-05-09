@@ -31,21 +31,8 @@ class RedisBackend(BaseBackend):
     async def put(self, key: str) -> dict:
         redis_key = f"fw:{key}"
 
-        response = await self.get(key)
-
-        if response is not None:
-            return await self.increment(key)
-
-        await self.client.set(
-            redis_key,
-            1,
-            ex=self.expire,
-        )
-
-        return {
-            "counter": 1,
-            "ttl": self.expire,
-        }
+        await self.client.set(redis_key, 0, ex=self.expire, nx=True)
+        return await self.increment(key)
 
     async def increment(self, key: str) -> dict:
         redis_key = f"fw:{key}"
@@ -83,6 +70,22 @@ class RedisBackend(BaseBackend):
             from_time,
             "+inf"
         )
+
+    async def get_time_fw(self, key: str) -> float:
+        redis_key = f"fw:{key}"
+
+        ttl = await self.client.ttl(redis_key)
+        return ttl
+    
+    async def get_time_sw(self, key):
+
+        time = datetime.now(timezone.utc) - timedelta(seconds=self.expire)
+        
+        res_range = await self.get_range(key,time.timestamp())
+        timestamp = float(res_range[0])
+
+        return (timestamp + self.expire) - datetime.now(timezone.utc).timestamp()
+      
 
     async def _clear(self):
         await self.client.flushall()

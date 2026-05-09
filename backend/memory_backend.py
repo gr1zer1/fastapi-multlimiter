@@ -58,6 +58,22 @@ class MemoryBackend(BaseBackend):
             return [] 
 
         return  list(filter(lambda t: t>from_time,res))
+    
+
+    async def get_time_fw(self, key) -> float:
+        res = await self.get(key)
+
+        data = res.get("expire_at")
+        return (data - datetime.now(timezone.utc)).total_seconds()
+
+    async def get_time_sw(self, key) -> float:
+
+        time = datetime.now(timezone.utc) - timedelta(seconds=self.expire)
+        
+        res_range = await self.get_range(key,time.timestamp())
+        timestamp = res_range[0]
+
+        return (timestamp + self.expire) - datetime.now(timezone.utc).timestamp()
 
 
     async def _clear(self):

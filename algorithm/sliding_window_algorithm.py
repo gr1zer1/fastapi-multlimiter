@@ -14,11 +14,12 @@ class SlidingWindowAlgorithm(BaseAlgorithm):
         self.key_func = key_func
 
 
-    async def check(self, key: str) -> bool:
+    async def check(self, key: str) -> dict:
         await self.backend.append(key,datetime.now(timezone.utc).timestamp())
         res = await self.backend.get_range(key=key,from_time=datetime.now(timezone.utc).timestamp()-self.window)
         if len(res) > self.limit:
-            return False
+            return {"remain":0,"check":False,"after":await self.backend.get_time_sw(key)}
+
         
+        return {"remain":self.limit - len(res),"check":True,"after":await self.backend.get_time_sw(key)}
         
-        return True
