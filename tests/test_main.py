@@ -8,6 +8,8 @@ from freezegun import freeze_time
 from datetime import datetime,timedelta,timezone
 import asyncio
 
+def get_user(request: Request):
+    return request.client.host + request.url.path
 
 @pytest_asyncio.fixture
 async def app():
@@ -32,6 +34,13 @@ async def app():
         redis_backend,
         limit=5,
         window=5,
+    )
+
+    with_key_func_sw = SlidingWindowAlgorithm(
+        MemoryBackend(),
+        limit=5,
+        window=60,
+        key_func=get_user
     )
 
     test_app = FastAPI()
@@ -66,6 +75,11 @@ async def app():
     @test_app.get("/redis/sw", dependencies=[Depends(redis_sw.limiter)])
     async def redis__sw():
         return {"message": "Hello World"}
+    
+    @test_app.get("/host/path",dependencies=[Depends(with_key_func_sw.limiter)])
+    async def key_sw():
+        return {"message": "Hello World"}
+        
 
     yield test_app
 
@@ -164,3 +178,7 @@ async def test_timestamp_redis_sw(client,clean_redis):
     await asyncio.sleep(5)
     
     await limit_loop("/redis/sw",client)
+
+
+async def test_key_func_sw(client):
+    await limit_loop("/host/path",client)
