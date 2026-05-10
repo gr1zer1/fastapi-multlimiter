@@ -4,6 +4,9 @@ from fastapi import Request,HTTPException,status
 from typing import Callable
 import inspect
 
+from functools import wraps
+import inspect
+
 
 class BaseAlgorithm(ABC):
     
@@ -42,18 +45,23 @@ class BaseAlgorithm(ABC):
             )
         
     
+
+
     def limiter_wrapper(self, func):
-        async def wrapper(request: Request):
+        @wraps(func)
+        async def wrapper(request: Request, **kwargs):
+
             res = await self.check(await self.get_value(request))
             if not res["check"]:
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail={"detail": "Too Many Requests"},
                     headers={
-                    "X-RateLimit-Limit":str(self.limit),
-                    "X-RateLimit-Remaining":str(res["remain"]),
-                    "Retry-After":str(res["after"])
+                        "X-RateLimit-Limit": str(self.limit),
+                        "X-RateLimit-Remaining": str(res["remain"]),
+                        "Retry-After": str(res["after"])
                     },
                 )
-            return await func(request)
+            return await func(request,**kwargs)
+        
         return wrapper
