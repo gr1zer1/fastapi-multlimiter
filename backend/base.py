@@ -41,6 +41,15 @@ class BaseBackend(ABC):
         ...
 
     @abstractmethod
+    async def consume_token(self, key: str, capacity: int, refill_rate: float, now: float) -> dict:
+        """
+        Get dict with data about token bucket
+        Returns:
+            A dictionary with ``allowed``, ``tokens_left``, and ``retry_after`` fields.
+        """
+        ...
+
+    @abstractmethod
     async def get_time_fw(self, key: str) -> float:
         """Return seconds until the fixed-window counter resets."""
         ...
