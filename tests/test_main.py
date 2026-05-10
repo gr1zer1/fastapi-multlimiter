@@ -195,3 +195,5 @@ async def test_response_headers(client,clean_redis):
 
     response = await limit_loop("/fw",client)
     assert response.headers.get("X-RateLimit-Limit") == str(LIMIT)
+    assert response.headers.get("X-RateLimit-Remaining") == "0"
+    assert response.headers.get("Retry-After") is not None
