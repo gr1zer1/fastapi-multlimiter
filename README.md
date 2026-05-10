@@ -183,7 +183,6 @@ This project is still a prototype. Before using it as a reusable package or in p
 - CI configuration
 - separate unit and integration tests
 - atomic Redis operations for concurrent requests
-- cleanup/TTL behavior for sliding-window keys
 - documented public API
 
 ## License
