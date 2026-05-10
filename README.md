@@ -184,9 +184,7 @@ This project is still a prototype. Before using it as a reusable package or in p
 - separate unit and integration tests
 - atomic Redis operations for concurrent requests
 - cleanup/TTL behavior for sliding-window keys
-- response headers such as `Retry-After` and `X-RateLimit-*`
 - documented public API
-- configuration through environment variables or settings
 
 ## License
 
