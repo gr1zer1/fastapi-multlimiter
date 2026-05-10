@@ -78,7 +78,71 @@ class MemoryBackend(BaseBackend):
         await self.cleanup(key)
         return  list(filter(lambda t: t>from_time,res))
     
+    
+    async def get_bucket(self, key: str) -> dict | None: 
+        res = self.counter.get(f"tb:{key}")
+        return res
 
+
+    async def set_bucket(self,
+                         key: str,
+                         tokens: int,
+                         last_refill: float
+                    ) -> dict:
+        payload = {"tokens":tokens,"last_refill":last_refill}
+        
+        self.counter[f"tb:{key}"] = payload
+
+        return payload
+    
+    async def consume_token(self,
+                            key: str,
+                            capacity: int,
+                            refill_rate: float,
+                            now: float
+                        ) -> dict:
+        res = await self.get_bucket(key)
+        
+        
+
+        if res is None:
+            
+            tokens = capacity
+            tokens -= 1
+
+            await self.set_bucket(
+                key,
+                tokens,
+                now)
+            
+            return {"allowed":True,"tokens_left":tokens,"retry_after":0}
+
+        tokens = res["tokens"]
+        last_refill = res["last_refill"]
+
+        if last_refill < now:
+            res["tokens"] = min(
+                capacity,tokens + (refill_rate * (now-last_refill))
+                )
+            tokens = res["tokens"]
+            res["last_refill"] = now
+            last_refill = now
+
+        if tokens < 1:
+            retry_after = 1/refill_rate
+
+            return {"allowed":False,
+                    "tokens_left":tokens,
+                    "retry_after":retry_after
+                    }
+
+        tokens -= 1
+
+        await self.set_bucket(key,tokens,last_refill)
+        return {"allowed":True,"tokens_left":tokens,"retry_after":0}
+
+
+    
     async def get_time_fw(self, key) -> float:
         """Return seconds until the fixed-window counter for ``key`` resets."""
         res = await self.get(key)
