@@ -105,8 +105,9 @@ class RedisBackend(BaseBackend):
         timestamp = float(res_range[0])
 
         return (timestamp + self.expire) - datetime.now(timezone.utc).timestamp()
-      
-
+    
+    async def consume_token(self, key, capacity, refill_rate, now):
+        pass
     async def _clear(self):
         """Flush all Redis data.
 

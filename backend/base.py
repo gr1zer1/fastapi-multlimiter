@@ -41,7 +41,12 @@ class BaseBackend(ABC):
         ...
 
     @abstractmethod
-    async def consume_token(self, key: str, capacity: int, refill_rate: float, now: float) -> dict:
+    async def consume_token(self,
+                            key: str,
+                            capacity: int,
+                            refill_rate: float,
+                            now: float
+                        ) -> dict:
         """
         Get dict with data about token bucket
         Returns:
