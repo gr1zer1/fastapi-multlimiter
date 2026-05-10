@@ -70,6 +70,11 @@ async def app():
     @algorithm_fw.limiter_wrapper
     async def wrapper_fw(request: Request):
         return {"message": "Hello World"}
+    
+    @test_app.get("/wrapper/params/fw")
+    @algorithm_fw.limiter_wrapper
+    async def params_fw(request: Request,name: str):
+        return {"message": f"Hello {name}"}
 
     @test_app.get("/redis/fw", dependencies=[Depends(redis_fw.limiter)])
     async def redis__fw():
@@ -142,6 +147,10 @@ async def test_limit_wrapper_fw(client):
 
 async def test_limit_wrapper_sw(client):
     await limit_loop("/wrapper/sw", client)
+
+
+async def test_wrapper_params(client):
+    await limit_loop("/wrapper/params/fw?name=test",client)
 
 
 async def test_redis_fw(client, clean_redis):
