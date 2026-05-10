@@ -9,6 +9,14 @@ import inspect
 
 
 class BaseAlgorithm(ABC):
+    """Base class for FastAPI-compatible rate limiting algorithms.
+
+    Args:
+        backend: Storage backend used by the algorithm.
+        limit: Maximum number of requests allowed in the window.
+        window: Window size in seconds.
+        key_func: Optional callable that builds a rate limit key from a request.
+    """
     
     def __init__(self,backend: BaseBackend,limit: int, window: int, key_func: Callable | None = None):
         self.backend = backend
@@ -18,10 +26,17 @@ class BaseAlgorithm(ABC):
     
 
     @abstractmethod
-    async def check(self, key: str) -> dict: ...
+    async def check(self, key: str) -> dict:
+        """Check whether a key is allowed to make a request.
+
+        Returns:
+            A dictionary with ``check``, ``remain``, and ``after`` fields.
+        """
+        ...
 
 
     async def get_value(self,request: Request) -> str:
+        """Build a rate limit key for a FastAPI request."""
         if self.key_func is None:
             return request.client.host
         
@@ -32,6 +47,7 @@ class BaseAlgorithm(ABC):
 
 
     async def limiter(self, request: Request):
+        """FastAPI dependency that raises HTTP 429 when the limit is exceeded."""
         res = await self.check(await self.get_value(request))
         if not res["check"]:
             raise HTTPException(
@@ -48,6 +64,7 @@ class BaseAlgorithm(ABC):
 
 
     def limiter_wrapper(self, func):
+        """Return a route decorator that applies this rate limiter."""
         @wraps(func)
         async def wrapper(request: Request, **kwargs):
 
