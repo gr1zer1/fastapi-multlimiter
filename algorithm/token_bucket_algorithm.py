@@ -19,18 +19,18 @@ class TokenBucketAlgorithm(BaseAlgorithm):
         self.backend = backend
         backend.expire = int(refill_rate)
     
-        self.capacity = capacity
+        self.limit = capacity
         self.refill_rate = refill_rate
 
         self.key_func = key_func
     
 
     async def check(self, key: str) -> dict:
-        date = datetime.now(timezone.utc).timestamp
+        date = datetime.now(timezone.utc).timestamp()
 
         return await self.backend.consume_token(
             key=key,
-            capacity=self.capacity,
+            capacity=self.limit,
             refill_rate=self.refill_rate,
             now=date
         )

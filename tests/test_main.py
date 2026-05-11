@@ -2,7 +2,7 @@ from httpx import ASGITransport, AsyncClient
 from fastapi import Depends, FastAPI, Request
 import pytest_asyncio
 
-from algorithm import FixedWindowAlgorithm, SlidingWindowAlgorithm
+from algorithm import FixedWindowAlgorithm, SlidingWindowAlgorithm, TokenBucketAlgorithm
 from backend import MemoryBackend, RedisBackend
 from freezegun import freeze_time
 from datetime import datetime,timedelta,timezone
@@ -46,6 +46,12 @@ async def app():
         key_func=get_user
     )
 
+    token = TokenBucketAlgorithm(
+        MemoryBackend(),
+        capacity=5,
+        refill_rate=1
+    )
+
     test_app = FastAPI()
     test_app.state.redis_backend = redis_backend
 
@@ -86,6 +92,10 @@ async def app():
     
     @test_app.get("/host/path",dependencies=[Depends(with_key_func_sw.limiter)])
     async def key_sw():
+        return {"message": "Hello World"}
+    
+    @test_app.get("/token",dependencies=[Depends(token.limiter)])
+    async def token_route():
         return {"message": "Hello World"}
         
 
@@ -206,3 +216,7 @@ async def test_response_headers(client,clean_redis):
     assert response.headers.get("X-RateLimit-Limit") == str(LIMIT)
     assert response.headers.get("X-RateLimit-Remaining") == "0"
     assert response.headers.get("Retry-After") is not None
+
+
+async def test_token_algorithm(client,clean_redis):
+    await limit_loop("/token",client)
