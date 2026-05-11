@@ -1,24 +1,36 @@
 from .base import BaseAlgorithm
 from backend import BaseBackend
 from typing import Callable
+from datetime import datetime,timezone
 
 
 class TokenBucketAlgorithm(BaseAlgorithm):
     
     
-    def __init__(self, backend: BaseBackend, limit: int, window: int, key_func: Callable | None = None):
+    def __init__(self, backend: BaseBackend, capacity: int, refill_rate: float, key_func: Callable | None = None):
         """Initialize a token bucket limiter.
 
         Args:
             backend: Storage backend for counters.
-            limit: Maximum number of requests per window.
-            window: Window size in seconds.
+            capacity: Maximum allowed amount of tokens in bucket.
+            refill_rate: How many tokens puts in bucket per second.
             key_func: Optional callable that builds a key from the request.
         """
         self.backend = backend
-        backend.expire = window
+        backend.expire = int(refill_rate)
     
-        self.limit = limit
-        self.window = window
+        self.capacity = capacity
+        self.refill_rate = refill_rate
 
         self.key_func = key_func
+    
+
+    async def check(self, key: str) -> dict:
+        date = datetime.now(timezone.utc).timestamp
+
+        return await self.backend.consume_token(
+            key=key,
+            capacity=self.capacity,
+            refill_rate=self.refill_rate,
+            now=date
+        )
