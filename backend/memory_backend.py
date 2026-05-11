@@ -115,7 +115,7 @@ class MemoryBackend(BaseBackend):
                 tokens,
                 now)
             
-            return {"allowed":True,"tokens_left":tokens,"retry_after":0}
+            return {"check":True,"remain":tokens,"after":0}
 
         tokens = res["tokens"]
         last_refill = res["last_refill"]
@@ -131,15 +131,15 @@ class MemoryBackend(BaseBackend):
         if tokens < 1:
             retry_after = 1/refill_rate
 
-            return {"allowed":False,
-                    "tokens_left":tokens,
-                    "retry_after":retry_after
+            return {"check":False,
+                    "remain":tokens,
+                    "after":retry_after
                     }
 
         tokens -= 1
 
         await self.set_bucket(key,tokens,last_refill)
-        return {"allowed":True,"tokens_left":tokens,"retry_after":0}
+        return {"check":True,"remain":tokens,"after":0}
 
 
     
