@@ -17,14 +17,15 @@ def get_user(request: Request):
 @pytest_asyncio.fixture
 async def app():
     redis_backend = RedisBackend("redis://localhost:6379")
+    memory_backend = MemoryBackend()
 
     algorithm_fw = FixedWindowAlgorithm(
-        MemoryBackend(),
+        memory_backend,
         limit=LIMIT,
         window=60,
     )
     algorithm_sw = SlidingWindowAlgorithm(
-        MemoryBackend(),
+        memory_backend,
         limit=LIMIT,
         window=60,
     )
@@ -40,20 +41,21 @@ async def app():
     )
 
     with_key_func_sw = SlidingWindowAlgorithm(
-        MemoryBackend(),
+        memory_backend,
         limit=5,
         window=60,
         key_func=get_user
     )
 
     token = TokenBucketAlgorithm(
-        MemoryBackend(),
+        memory_backend,
         capacity=5,
         refill_rate=1
     )
 
     test_app = FastAPI()
     test_app.state.redis_backend = redis_backend
+    test_app.state.memory_backend = memory_backend 
 
     @test_app.get("/")
     async def root():
@@ -120,6 +122,11 @@ async def clean_redis(app):
     await app.state.redis_backend._clear()
 
 
+@pytest_asyncio.fixture(autouse=True)
+async def memory_clean_up(app):
+    await app.state.memory_backend._clear()
+    yield
+    await app.state.memory_backend._clear()
 
 
 
