@@ -225,5 +225,15 @@ async def test_response_headers(client,clean_redis):
     assert response.headers.get("Retry-After") is not None
 
 
-async def test_token_algorithm(client,clean_redis):
+async def test_token_algorithm(client):
     await limit_loop("/token",client)
+
+
+async def test_token_timestamp(client):
+    await limit_loop("/token",client)
+
+    date = datetime.now(timezone.utc) + timedelta(seconds=5)
+
+    time = freeze_time(date)
+    with time:
+        await limit_loop("/token",client)
