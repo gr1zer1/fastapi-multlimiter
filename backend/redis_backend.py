@@ -4,6 +4,35 @@ from datetime import datetime,timezone,timedelta
 import json
 
 
+TOKEN_BUCKET_SCRIPT = """
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local capacity = tonumber(ARGV[2])
+local refill_rate = tonumber(ARGV[3])
+
+local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
+local tokens = tonumber(bucket[1])
+local last_refill = tonumber(bucket[2])
+
+if tokens == nil then
+    tokens = capacity - 1
+    redis.call('HMSET', key, 'tokens', tokens, 'last_refill', now)
+    redis.call('EXPIRE', key, math.ceil(capacity / refill_rate))
+    return {1, tokens, 0}
+end
+
+local new_tokens = math.min(capacity, tokens + (now - last_refill) * refill_rate)
+
+if new_tokens < 1 then
+    return {0, new_tokens, 1 / refill_rate}
+end
+
+new_tokens = new_tokens - 1
+redis.call('HMSET', key, 'tokens', new_tokens, 'last_refill', now)
+return {1, new_tokens, 0}
+"""
+
+
 class RedisBackend(BaseBackend):
     """Redis backend for distributed rate limiting.
 
@@ -22,7 +51,7 @@ class RedisBackend(BaseBackend):
         self.expire: int | None = None
         self.client: redis.Redis = redis.from_url(url, decode_responses=True)
 
- 
+
     async def get(self, key: str) -> dict | None:
         """Return fixed-window counter payload for ``key`` if it exists."""
         redis_key = f"fw:{key}"
@@ -88,6 +117,16 @@ class RedisBackend(BaseBackend):
             from_time,
             "+inf"
         )
+
+
+    async def consume_token(self,
+                            key: str,
+                            capacity: int,
+                            refill_rate: float,
+                            now: float
+                        ) -> dict:
+        pass
+
 
     async def get_time_fw(self, key: str) -> float:
         """Return Redis TTL for the fixed-window counter."""
