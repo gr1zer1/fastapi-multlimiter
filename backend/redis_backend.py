@@ -125,7 +125,13 @@ class RedisBackend(BaseBackend):
                             refill_rate: float,
                             now: float
                         ) -> dict:
-        pass
+        res = await self.client.eval(TOKEN_BUCKET_SCRIPT, 1,key , now, capacity, refill_rate)
+
+        return {
+            "allowed": bool(res[0]),
+            "tokens_left": float(res[1]),
+            "retry_after": float(res[2])
+        }
 
 
     async def get_time_fw(self, key: str) -> float:
