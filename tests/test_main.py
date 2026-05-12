@@ -53,6 +53,12 @@ async def app():
         refill_rate=1
     )
 
+    redis_token = TokenBucketAlgorithm(
+        redis_backend,
+        capacity=5,
+        refill_rate=1
+    )
+
     test_app = FastAPI()
     test_app.state.redis_backend = redis_backend
     test_app.state.memory_backend = memory_backend 
@@ -98,6 +104,10 @@ async def app():
     
     @test_app.get("/token",dependencies=[Depends(token.limiter)])
     async def token_route():
+        return {"message": "Hello World"}
+    
+    @test_app.get("/redis/token",dependencies=[Depends(redis_token.limiter)])
+    async def token_redis():
         return {"message": "Hello World"}
         
 
@@ -237,3 +247,7 @@ async def test_token_timestamp(client):
     time = freeze_time(date)
     with time:
         await limit_loop("/token",client)
+
+
+async def test_token_redis(client,clean_redis):
+    await limit_loop("/redis/token",client)
