@@ -125,12 +125,12 @@ class RedisBackend(BaseBackend):
                             refill_rate: float,
                             now: float
                         ) -> dict:
-        res = await self.client.eval(TOKEN_BUCKET_SCRIPT, 1,key , now, capacity, refill_rate)
-
+        res = await self.client.eval(TOKEN_BUCKET_SCRIPT, 1, key , now, capacity, refill_rate)
+        print("EVAL RESULT:", res)
         return {
-            "allowed": bool(res[0]),
-            "tokens_left": float(res[1]),
-            "retry_after": float(res[2])
+            "check": bool(res[0]),
+            "remain": float(res[1]),
+            "after": float(res[2])
         }
 
 
@@ -151,8 +151,7 @@ class RedisBackend(BaseBackend):
 
         return (timestamp + self.expire) - datetime.now(timezone.utc).timestamp()
     
-    async def consume_token(self, key, capacity, refill_rate, now):
-        pass
+    
     async def _clear(self):
         """Flush all Redis data.
 
