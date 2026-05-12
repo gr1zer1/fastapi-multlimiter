@@ -251,3 +251,13 @@ async def test_token_timestamp(client):
 
 async def test_token_redis(client,clean_redis):
     await limit_loop("/redis/token",client)
+
+
+async def test_token_redis_timestamp(client):
+    await limit_loop("/redis/token",client)
+
+    date = datetime.now(timezone.utc) + timedelta(seconds=5)
+
+    time = freeze_time(date)
+    with time:
+        await limit_loop("/redis/token",client)
