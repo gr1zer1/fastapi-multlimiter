@@ -1,16 +1,15 @@
 # FastAPI Limiter
 
-Async rate limiter prototype for FastAPI with fixed-window and sliding-window algorithms.
+Async rate limiter for FastAPI with pluggable backends and algorithms.
 
-The project currently includes:
+## Features
 
-- FastAPI dependency-based limiter usage
-- decorator-based limiter usage
-- in-memory backend
-- Redis backend
-- fixed-window algorithm
-- sliding-window algorithm
-- async tests for memory and Redis flows
+- Three rate limiting algorithms: fixed-window, sliding-window, token bucket
+- Two backends: in-memory (for development and tests) and Redis (for production)
+- Two usage styles: FastAPI `Depends` and decorator
+- Custom key functions (by IP, user, path, or any combination)
+- Rate limit response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After`
+- GitHub Actions CI with Redis service
 
 ## Project Structure
 
@@ -19,7 +18,8 @@ The project currently includes:
 ├── algorithm/
 │   ├── base.py
 │   ├── fixed_window_algorithm.py
-│   └── sliding_window_algorithm.py
+│   ├── sliding_window_algorithm.py
+│   └── token_bucket_algorithm.py
 ├── backend/
 │   ├── base.py
 │   ├── memory_backend.py
@@ -28,34 +28,24 @@ The project currently includes:
 │   └── test_main.py
 ├── main.py
 ├── pytest.ini
-└── requirements.txt
+├── requirements.txt
+└── .github/workflows/ci.yml
 ```
 
 ## Requirements
 
 - Python 3.11+
-- Redis, required only for Redis-backed routes and Redis tests
+- Redis — required only for Redis-backed routes and Redis tests
 
 ## Installation
-
-Create and activate a virtual environment:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
 pip install -r requirements.txt
 ```
 
 ## Running Redis
-
-The demo app and tests expect Redis at `redis://localhost:6379`.
-
-With Docker:
 
 ```bash
 docker run --rm -p 6379:6379 redis:7
@@ -67,33 +57,33 @@ docker run --rm -p 6379:6379 redis:7
 uvicorn main:app --reload
 ```
 
-The app will be available at:
-
-```text
-http://127.0.0.1:8000
-```
-
 ## Demo Endpoints
 
 ```text
-GET /              No limiter
-GET /fw            Fixed-window limiter with MemoryBackend
-GET /sw            Sliding-window limiter with MemoryBackend
-GET /wrapper/fw    Fixed-window limiter as decorator
-GET /wrapper/sw    Sliding-window limiter as decorator
-GET /redis/fw      Fixed-window limiter with RedisBackend
-GET /redis/sw      Sliding-window limiter with RedisBackend
+GET /                  No limiter
+GET /fw                Fixed-window, MemoryBackend
+GET /sw                Sliding-window, MemoryBackend
+GET /wrapper/fw        Fixed-window as decorator
+GET /wrapper/sw        Sliding-window as decorator
+GET /redis/fw          Fixed-window, RedisBackend
+GET /redis/sw          Sliding-window, RedisBackend
+GET /redis/tb          Token bucket, RedisBackend
 ```
 
-The current demo limit is `5` requests per window. After the limit is exceeded, the app returns HTTP `429 Too Many Requests`.
+Limit is `5` requests per window. Exceeding it returns HTTP `429 Too Many Requests` with headers:
 
-## Usage Example
+```
+X-RateLimit-Limit: 5
+X-RateLimit-Remaining: 0
+Retry-After: 42.0
+```
 
-Dependency style:
+## Usage
+
+### Dependency style
 
 ```python
 from fastapi import Depends, FastAPI
-
 from algorithm import FixedWindowAlgorithm
 from backend import MemoryBackend
 
@@ -105,17 +95,15 @@ limiter = FixedWindowAlgorithm(
     window=60,
 )
 
-
 @app.get("/limited", dependencies=[Depends(limiter.limiter)])
 async def limited():
     return {"message": "ok"}
 ```
 
-Decorator style:
+### Decorator style
 
 ```python
 from fastapi import FastAPI, Request
-
 from algorithm import SlidingWindowAlgorithm
 from backend import MemoryBackend
 
@@ -127,27 +115,38 @@ limiter = SlidingWindowAlgorithm(
     window=60,
 )
 
-
 @app.get("/limited")
 @limiter.limiter_wrapper
 async def limited(request: Request):
     return {"message": "ok"}
 ```
 
-Custom key function:
+### Token bucket
+
+```python
+from algorithm import TokenBucketAlgorithm
+from backend import RedisBackend
+
+limiter = TokenBucketAlgorithm(
+    backend=RedisBackend("redis://localhost:6379"),
+    capacity=10,
+    refill_rate=2.0,  # tokens per second
+)
+
+@app.get("/limited", dependencies=[Depends(limiter.limiter)])
+async def limited():
+    return {"message": "ok"}
+```
+
+### Custom key function
 
 ```python
 from fastapi import Request
 
-
 def get_user_key(request: Request) -> str:
-    return request.client.host + request.url.path
-```
+    return request.headers.get("X-User-ID") or request.client.host
 
-Pass it to an algorithm:
-
-```python
-limiter = SlidingWindowAlgorithm(
+limiter = FixedWindowAlgorithm(
     backend=MemoryBackend(),
     limit=5,
     window=60,
@@ -155,35 +154,24 @@ limiter = SlidingWindowAlgorithm(
 )
 ```
 
-## Running Tests
+### Redis backend
 
-Start Redis first if you want to run the full test suite:
+```python
+from backend import RedisBackend
+
+backend = RedisBackend("redis://localhost:6379")
+```
+
+## Running Tests
 
 ```bash
 docker run --rm -p 6379:6379 redis:7
-```
-
-Then run:
-
-```bash
 pytest
 ```
 
-or:
+## Known Limitations
 
-```bash
-python -m pytest
-```
-
-## Current Limitations
-
-This project is still a prototype. Before using it as a reusable package or in production, the main missing pieces are:
-
-- `pyproject.toml` packaging
-- CI configuration
-- separate unit and integration tests
-- atomic Redis operations for concurrent requests
-- documented public API
+- Sliding-window `zadd` + `zrangebyscore` in `RedisBackend` are not atomic — consider a Lua script for high-concurrency scenarios
 
 ## License
 
