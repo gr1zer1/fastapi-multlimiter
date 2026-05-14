@@ -84,8 +84,8 @@ Retry-After: 42.0
 
 ```python
 from fastapi import Depends, FastAPI
-from algorithm import FixedWindowAlgorithm
-from backend import MemoryBackend
+from fastapi_multlimiter.algorithm import FixedWindowAlgorithm
+from fastapi_multlimiter.backend import MemoryBackend
 
 app = FastAPI()
 
@@ -104,8 +104,8 @@ async def limited():
 
 ```python
 from fastapi import FastAPI, Request
-from algorithm import SlidingWindowAlgorithm
-from backend import MemoryBackend
+from fastapi_multlimiter.algorithm import SlidingWindowAlgorithm
+from fastapi_multlimiter.backend import MemoryBackend
 
 app = FastAPI()
 
@@ -124,8 +124,8 @@ async def limited(request: Request):
 ### Token bucket
 
 ```python
-from algorithm import TokenBucketAlgorithm
-from backend import RedisBackend
+from fastapi_multlimiter.algorithm import TokenBucketAlgorithm
+from fastapi_multlimiter.backend import RedisBackend
 
 limiter = TokenBucketAlgorithm(
     backend=RedisBackend("redis://localhost:6379"),
@@ -157,7 +157,7 @@ limiter = FixedWindowAlgorithm(
 ### Redis backend
 
 ```python
-from backend import RedisBackend
+from fastapi_multlimiter.backend import RedisBackend
 
 backend = RedisBackend("redis://localhost:6379")
 ```

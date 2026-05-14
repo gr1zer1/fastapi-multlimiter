@@ -1,5 +1,5 @@
 [project]
-name = "asynclimiter"
+name = "fastapi-multlimiter"
 version = "0.1.0"
 description = "Async rate limiter for FastAPI with fixed-window, sliding-window and token bucket algorithms"
 readme = "README.md"
@@ -9,8 +9,9 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.100.0",
-    redis>=5.0.0,
 ]
+[tool.uv.build-backend]
+module-root = ""
 
 [project.optional-dependencies]
 redis = ["redis>=5.0.0"]
@@ -23,7 +24,7 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/gr1zer1/asynclimiter"
+Homepage = "https://github.com/gr1zer1/fastapi-multlimiter"
 
 [build-system]
 requires = ["uv_build>=0.11.14,<0.12.0"]

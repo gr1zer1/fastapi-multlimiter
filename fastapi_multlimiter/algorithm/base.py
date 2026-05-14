@@ -1,5 +1,5 @@
 from abc import ABC,abstractmethod
-from asynclimiter.backend import BaseBackend
+from fastapi_multlimiter.backend import BaseBackend
 from fastapi import Request,HTTPException,status
 from typing import Callable
 import inspect

@@ -1,5 +1,5 @@
 from .base import BaseAlgorithm
-from asynclimiter.backend import BaseBackend
+from fastapi_multlimiter.backend import BaseBackend
 from datetime import datetime,timezone
 from typing import Callable
 
