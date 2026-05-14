@@ -3,8 +3,8 @@ from fastapi.responses import JSONResponse
 
 from contextlib import asynccontextmanager
 
-from asynclimiter.algorithm import FixedWindowAlgorithm,SlidingWindowAlgorithm
-from asynclimiter.backend import MemoryBackend,RedisBackend
+from asynclimiter import FixedWindowAlgorithm,SlidingWindowAlgorithm
+from asynclimiter import MemoryBackend,RedisBackend
 
 redis_backend = RedisBackend("redis://localhost:6379")
 
