@@ -1,5 +1,5 @@
 from .base import BaseAlgorithm
-from backend import BaseBackend
+from asynclimiter.backend import BaseBackend
 from typing import Callable
 
 

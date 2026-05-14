@@ -2,8 +2,8 @@ from httpx import ASGITransport, AsyncClient
 from fastapi import Depends, FastAPI, Request
 import pytest_asyncio
 
-from algorithm import FixedWindowAlgorithm, SlidingWindowAlgorithm, TokenBucketAlgorithm
-from backend import MemoryBackend, RedisBackend
+from asynclimiter.algorithm import FixedWindowAlgorithm, SlidingWindowAlgorithm, TokenBucketAlgorithm
+from asynclimiter.backend import MemoryBackend, RedisBackend
 from freezegun import freeze_time
 from datetime import datetime,timedelta,timezone
 import asyncio
