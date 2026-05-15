@@ -3,18 +3,38 @@ name = "fastapi-multlimiter"
 version = "0.1.0"
 description = "Async rate limiter for FastAPI with fixed-window, sliding-window and token bucket algorithms"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "gr1zer1", email = "timuravramenko99@gmail.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.100.0",
+    "redis>=5.0.0",
 ]
+keywords = [
+    "fastapi",
+    "rate-limit",
+    "rate-limiter",
+    "redis",
+    "asyncio",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
 [tool.uv.build-backend]
 module-root = ""
 
 [project.optional-dependencies]
-redis = ["redis>=5.0.0"]
 dev = [
     "pytest",
     "pytest-asyncio",
@@ -25,6 +45,8 @@ dev = [
 
 [project.urls]
 Homepage = "https://github.com/gr1zer1/fastapi-multlimiter"
+Repository = "https://github.com/gr1zer1/fastapi-multlimiter"
+Issues = "https://github.com/gr1zer1/fastapi-multlimiter/issues"
 
 [build-system]
 requires = ["uv_build>=0.11.14,<0.12.0"]

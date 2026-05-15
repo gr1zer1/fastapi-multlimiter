@@ -1,4 +1,4 @@
-# FastAPI Limiter
+# fastapi-multlimiter
 
 Async rate limiter for FastAPI with pluggable backends and algorithms.
 
@@ -11,33 +11,20 @@ Async rate limiter for FastAPI with pluggable backends and algorithms.
 - Rate limit response headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `Retry-After`
 - GitHub Actions CI with Redis service
 
-## Project Structure
-
-```text
-.
-├── algorithm/
-│   ├── base.py
-│   ├── fixed_window_algorithm.py
-│   ├── sliding_window_algorithm.py
-│   └── token_bucket_algorithm.py
-├── backend/
-│   ├── base.py
-│   ├── memory_backend.py
-│   └── redis_backend.py
-├── tests/
-│   └── test_main.py
-├── main.py
-├── pytest.ini
-├── requirements.txt
-└── .github/workflows/ci.yml
-```
-
 ## Requirements
 
-- Python 3.11+
-- Redis — required only for Redis-backed routes and Redis tests
+- Python 3.12+
+- Redis server — required only for Redis-backed routes and Redis tests
 
 ## Installation
+
+Install the package from PyPI:
+
+```bash
+pip install fastapi-multlimiter
+```
+
+For local development from this repository:
 
 ```bash
 python -m venv .venv
@@ -67,7 +54,6 @@ GET /wrapper/fw        Fixed-window as decorator
 GET /wrapper/sw        Sliding-window as decorator
 GET /redis/fw          Fixed-window, RedisBackend
 GET /redis/sw          Sliding-window, RedisBackend
-GET /redis/tb          Token bucket, RedisBackend
 ```
 
 Limit is `5` requests per window. Exceeding it returns HTTP `429 Too Many Requests` with headers:
@@ -124,6 +110,7 @@ async def limited(request: Request):
 ### Token bucket
 
 ```python
+from fastapi import Depends
 from fastapi_multlimiter.algorithm import TokenBucketAlgorithm
 from fastapi_multlimiter.backend import RedisBackend
 
@@ -160,6 +147,29 @@ limiter = FixedWindowAlgorithm(
 from fastapi_multlimiter.backend import RedisBackend
 
 backend = RedisBackend("redis://localhost:6379")
+```
+
+## Project Structure
+
+```text
+.
+├── fastapi_multlimiter/
+│   ├── algorithm/
+│   │   ├── base.py
+│   │   ├── fixed_window_algorithm.py
+│   │   ├── sliding_window_algorithm.py
+│   │   └── token_bucket_algorithm.py
+│   └── backend/
+│       ├── base.py
+│       ├── memory_backend.py
+│       └── redis_backend.py
+├── tests/
+│   └── test_main.py
+├── main.py
+├── pyproject.toml
+├── pytest.ini
+├── requirements.txt
+└── .github/workflows/ci.yml
 ```
 
 ## Running Tests
