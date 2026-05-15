@@ -179,6 +179,20 @@ docker run --rm -p 6379:6379 redis:7
 pytest
 ```
 
+## Publishing
+
+Releases are published to PyPI by GitHub Actions when a version tag is pushed.
+The tag must match the package version in `pyproject.toml`.
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The workflow uses PyPI Trusted Publishing. Configure a trusted publisher for
+this repository on PyPI with workflow file `.github/workflows/publish.yml` and
+environment `pypi`.
+
 ## Known Limitations
 
 - Sliding-window `zadd` + `zrangebyscore` in `RedisBackend` are not atomic — consider a Lua script for high-concurrency scenarios
