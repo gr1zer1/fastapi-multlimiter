@@ -125,6 +125,17 @@ class RedisBackend(BaseBackend):
                             refill_rate: float,
                             now: float
                         ) -> dict:
+        """Consume one token from a Redis-backed token bucket.
+
+        The operation is executed with a Lua script so refill and consumption
+        happen atomically for a single key.
+
+        Returns:
+            A dictionary containing:
+            ``check``: whether the request is allowed,
+            ``remain``: remaining tokens in the bucket,
+            ``after``: seconds until another token is available.
+        """
         res = await self.client.eval(TOKEN_BUCKET_SCRIPT, 1, key , now, capacity, refill_rate)
         print("EVAL RESULT:", res)
         return {

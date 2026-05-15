@@ -19,6 +19,7 @@ class BaseAlgorithm(ABC):
     """
     
     def __init__(self,backend: BaseBackend,limit: int, window: int, key_func: Callable | None = None):
+        """Initialize common limiter configuration."""
         self.backend = backend
         self.limit = limit
         self.window = window
@@ -67,6 +68,7 @@ class BaseAlgorithm(ABC):
         """Return a route decorator that applies this rate limiter."""
         @wraps(func)
         async def wrapper(request: Request, **kwargs):
+            """Check the request limit before calling the wrapped route handler."""
 
             res = await self.check(await self.get_value(request))
             if not res["check"]:

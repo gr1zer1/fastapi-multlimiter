@@ -80,6 +80,7 @@ class MemoryBackend(BaseBackend):
     
     
     async def get_bucket(self, key: str) -> dict | None: 
+        """Return token bucket state for ``key`` if it exists."""
         res = self.counter.get(f"tb:{key}")
         return res
 
@@ -89,6 +90,16 @@ class MemoryBackend(BaseBackend):
                          tokens: int,
                          last_refill: float
                     ) -> dict:
+        """Store token bucket state for ``key``.
+
+        Args:
+            key: Rate limit key.
+            tokens: Current number of tokens in the bucket.
+            last_refill: Timestamp of the latest refill calculation.
+
+        Returns:
+            Stored token bucket payload.
+        """
         payload = {"tokens":tokens,"last_refill":last_refill}
         
         self.counter[f"tb:{key}"] = payload
@@ -101,6 +112,17 @@ class MemoryBackend(BaseBackend):
                             refill_rate: float,
                             now: float
                         ) -> dict:
+        """Consume one token from an in-memory token bucket.
+
+        The bucket is created on the first request. Existing buckets are
+        refilled based on elapsed time before a token is consumed.
+
+        Returns:
+            A dictionary containing:
+            ``check``: whether the request is allowed,
+            ``remain``: remaining tokens in the bucket,
+            ``after``: seconds until another token is available.
+        """
         res = await self.get_bucket(key)
         
         

@@ -5,6 +5,11 @@ from datetime import datetime,timezone
 
 
 class TokenBucketAlgorithm(BaseAlgorithm):
+    """Token bucket rate limiting algorithm.
+
+    Each key has a bucket with a fixed capacity. Requests consume one token,
+    and tokens refill over time according to ``refill_rate``.
+    """
     
     
     def __init__(self, backend: BaseBackend, capacity: int, refill_rate: float, key_func: Callable | None = None):
@@ -26,6 +31,14 @@ class TokenBucketAlgorithm(BaseAlgorithm):
     
 
     async def check(self, key: str) -> dict:
+        """Consume one token for ``key`` if a token is available.
+
+        Returns:
+            A dictionary containing:
+            ``check``: whether the request is allowed,
+            ``remain``: remaining tokens in the bucket,
+            ``after``: seconds until another token is available.
+        """
         date = datetime.now(timezone.utc).timestamp()
 
         return await self.backend.consume_token(

@@ -47,10 +47,16 @@ class BaseBackend(ABC):
                             refill_rate: float,
                             now: float
                         ) -> dict:
-        """
-        Get dict with data about token bucket
+        """Consume one token from a token bucket.
+
+        Args:
+            key: Rate limit key.
+            capacity: Maximum number of tokens in the bucket.
+            refill_rate: Number of tokens refilled per second.
+            now: Current timestamp in seconds.
+
         Returns:
-            A dictionary with ``allowed``, ``tokens_left``, and ``retry_after`` fields.
+            A dictionary with ``check``, ``remain``, and ``after`` fields.
         """
         ...
 
